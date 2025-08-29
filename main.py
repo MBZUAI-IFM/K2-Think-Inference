@@ -11,13 +11,15 @@ import logging
 
 class Env:
 
-    SOLVER_LLM_API_KEY: str = ''
-    SOLVER_LLM_BASE_URL: str = ''
-    SOLVER_LLM_MODEL: str = "K2-Think"
-
+    # Endpoint configuration of planner llm
     PLANNER_LLM_API_KEY: str = ''
     PLANNER_LLM_BASE_URL: str = ''
     PLANNER_LLM_MODEL: str = ''
+
+    # Endpoint configuration of solver llm
+    SOLVER_LLM_API_KEY: str = ''
+    SOLVER_LLM_BASE_URL: str = ''
+    SOLVER_LLM_MODEL: str = "K2-Think"
 
     SOLVER_PROMPT: str = "You are K2-Think, a helpful assistant trained by MBZUAI. To answer the user's question, you first think about the reasoning process and then provide the user with the answer. The reasoning process and answer are enclosed within <think> </think> and <answer> </answer> tags, respectively, i.e., <think> reasoning process here </think> <answer> answer here </answer>."
     SOLVER_TEMPERATURE: float = 1.0
@@ -151,7 +153,8 @@ class K2ThinkPipeline:
                 best_index = index
                 best_completion = completion
                 best_answer = answers[index]
-        return best_index, best_completion
+        log.info(f"{best_index=}")
+        return best_completion
 
     async def best_of_n_sampling(self, question: str, n: int = 3, timeout: float = 540) -> ChatCompletion | None:
         request_id = uuid.uuid4()
@@ -171,14 +174,14 @@ class K2ThinkPipeline:
             return None
 
         completions = self.bon_responses[request_id]["completions"]
-        best_index, best_completion = await self.select_best(question, completions)
-        log.info(f"{best_index=}")
+        best_completion = await self.select_best(question, completions)
         return best_completion
 
     async def single_sampling(self, request_id: uuid.UUID, bon_id: int, question: str):
         # Get a single completion
         response = await self.sampling_with_planning(question)
         self.bon_responses[request_id]["completions"][bon_id] = response
+        log.info(f"Finish sampling {bon_id}.\nQuestion: {question}\nAnswer{bon_id}: {response.choices[0].message.content}")
 
     async def sampling_with_planning(self, question: str):
 
@@ -253,4 +256,4 @@ async def main(query: str):
 if __name__ == "__main__":
     query: str = "Determine the least real number $M$ such that the inequality \\[|ab(a^{2}-b^{2})+bc(b^{2}-c^{2})+ca(c^{2}-a^{2})| \\leq M(a^{2}+b^{2}+c^{2})^{2}\\] holds for all real numbers $a$, $b$ and $c$."
     response = asyncio.run(main(query))
-    log.info(response)
+    log.info(f"Final answer generated.\nQuestion: {query}\nAnswer: {response.choices[0].message.content}")

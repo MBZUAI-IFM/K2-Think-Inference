@@ -11,11 +11,11 @@ import logging
 
 class Env:
 
-    SOLVER_LLM_API_KEY: str | None = None
+    SOLVER_LLM_API_KEY: str = ''
     SOLVER_LLM_BASE_URL: str = ''
     SOLVER_LLM_MODEL: str = "K2-Think"
 
-    PLANNER_LLM_API_KEY: str | None = None
+    PLANNER_LLM_API_KEY: str = ''
     PLANNER_LLM_BASE_URL: str = ''
     PLANNER_LLM_MODEL: str = ''
 
@@ -23,6 +23,7 @@ class Env:
     SOLVER_TEMPERATURE: float = 1.0
 
 
+logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 env = Env()
 
@@ -244,7 +245,12 @@ The ideas above may provide some insights in solving the challenge. Now please a
         return topics_list
 
 
+async def main(query: str):
+    pipeline = K2ThinkPipeline()
+    return await pipeline.run(query)
+
+
 if __name__ == "__main__":
     query: str = "Determine the least real number $M$ such that the inequality \\[|ab(a^{2}-b^{2})+bc(b^{2}-c^{2})+ca(c^{2}-a^{2})| \\leq M(a^{2}+b^{2}+c^{2})^{2}\\] holds for all real numbers $a$, $b$ and $c$."
-    pipeline = K2ThinkPipeline()
-    pipeline.run(query)
+    response = asyncio.run(main(query))
+    log.info(response)

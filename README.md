@@ -1,2 +1,25 @@
 # K2-Think-Inference
-Inference Code for K2-Think
+
+## Dependencies
+
+You will need to install the following python packages:
+```bash
+pip install openai pydantic
+```
+
+## Configuration
+You need to set the following arguments in `main.py`.
+```python
+SOLVER_LLM_API_KEY: str | None = None
+SOLVER_LLM_BASE_URL: str = ''
+SOLVER_LLM_MODEL: str = "K2-Think"
+
+PLANNER_LLM_API_KEY: str | None = None
+PLANNER_LLM_BASE_URL: str = ''
+PLANNER_LLM_MODEL: str = ''
+```
+
+## Test the Script
+```bash
+python main.py
+```

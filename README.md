@@ -4,7 +4,7 @@
 
 You will need to install the following python packages:
 ```bash
-pip install openai pydantic
+pip install -r requirements.txt
 ```
 
 ## Configuration

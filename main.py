@@ -1,12 +1,13 @@
-from openai import AsyncOpenAI
-from pydantic import BaseModel
 import asyncio
-import uuid
 import json
-from openai.types.chat.chat_completion import ChatCompletion
-from typing import List, Callable, Awaitable, Any
-import time
 import logging
+import time
+import uuid
+
+from openai import AsyncOpenAI
+from openai.types.chat.chat_completion import ChatCompletion
+from pydantic import BaseModel
+from typing import List, Callable, Awaitable, Any
 
 
 class Env:
@@ -21,6 +22,7 @@ class Env:
     SOLVER_LLM_BASE_URL: str = ''
     SOLVER_LLM_MODEL: str = "K2-Think"
 
+    # Adapted from AM-Thinking-v1: Advancing the Frontier of Reasoning at 32B Scale (Yunjie Ji et al.) https://arxiv.org/pdf/2505.08311
     SOLVER_PROMPT: str = "You are K2-Think, a helpful assistant trained by MBZUAI. To answer the user's question, you first think about the reasoning process and then provide the user with the answer. The reasoning process and answer are enclosed within <think> </think> and <answer> </answer> tags, respectively, i.e., <think> reasoning process here </think> <answer> answer here </answer>."
     SOLVER_TEMPERATURE: float = 1.0
 
@@ -35,13 +37,12 @@ class BoNIndex(BaseModel):
     index: int  # must be 0 or 1
     explanation: str
 
-class QuestionList(BaseModel):
-    questions: list[str]
 
 class SearchList(BaseModel):
     is_hard_problem: bool
     plan: str
     search_list: list[str]
+
 
 class K2ThinkPipeline:
     def __init__(self):
@@ -59,13 +60,17 @@ class K2ThinkPipeline:
     async def run(self, question: str) -> ChatCompletion:
         return await self.best_of_n_sampling(question=question, n=3, timeout=1200)
 
+    # We do not want to wait too long for alternate responses for Best-of-N.
+    # Once `soft_timeout` seconds have passed, we will return the first response
+    # if none have completed thusfar, otherwise we will return whatever responses have completed.
+    # At `hard_timeout` seconds, we throw an error.
     async def run_at_least_one(
         self,
         fn: Callable[[], Awaitable[Any]],
-        args_list:List[Any] = [], 
-        soft_timeout:float = 540,
-        hard_timeout:float = 3600 * 2,
-        poll_interval:float = 10
+        args_list: List[Any] = [],
+        soft_timeout: float = 9*60,
+        hard_timeout: float = 120*60,
+        poll_interval: float = 10
     ) -> List[Any]:
         start_time = time.monotonic()
         futures = [asyncio.ensure_future(fn(*args)) for args in args_list]
@@ -117,6 +122,7 @@ class K2ThinkPipeline:
         raise asyncio.TimeoutError(f"No task succeeded within hard timeout of {hard_timeout} seconds")
 
     async def select_best(self, question, completions):
+        # We use a linear scan here for simplicity, but a tree-based tournament would be more performant.
         answers = []
         for completion in completions:
             if completion is None:

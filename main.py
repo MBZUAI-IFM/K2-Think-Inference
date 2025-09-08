@@ -22,6 +22,9 @@ class Env:
     SOLVER_LLM_BASE_URL: str = ''
     SOLVER_LLM_MODEL: str = "K2-Think"
 
+    # N in Best-of-N sampling
+    N: int = 3
+
     # Adapted from AM-Thinking-v1: Advancing the Frontier of Reasoning at 32B Scale (Yunjie Ji et al.) https://arxiv.org/pdf/2505.08311
     SOLVER_PROMPT: str = "You are K2-Think, a helpful assistant trained by MBZUAI. To answer the user's question, you first think about the reasoning process and then provide the user with the answer. The reasoning process and answer are enclosed within <think> </think> and <answer> </answer> tags, respectively, i.e., <think> reasoning process here </think> <answer> answer here </answer>."
     SOLVER_TEMPERATURE: float = 1.0
@@ -58,11 +61,11 @@ class K2ThinkPipeline:
         self.bon_responses = {}
 
     async def run(self, question: str) -> ChatCompletion:
-        return await self.best_of_n_sampling(question=question, n=3, timeout=1200)
+        return await self.best_of_n_sampling(question=question, n=env.N, timeout=1200)
 
     # We do not want to wait too long for alternate responses for Best-of-N.
-    # Once `soft_timeout` seconds have passed, we will return the first response
-    # if none have completed thusfar, otherwise we will return whatever responses have completed.
+    # Once `soft_timeout` seconds have passed, we will collect all completed responses so far for Best-of-N selection.
+    # If none have completed thusfar, we will wait and return whatever responses have been completed first.
     # At `hard_timeout` seconds, we throw an error.
     async def run_at_least_one(
         self,

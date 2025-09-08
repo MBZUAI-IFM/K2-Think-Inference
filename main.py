@@ -22,6 +22,7 @@ class Env:
     SOLVER_LLM_BASE_URL: str = ''
     SOLVER_LLM_MODEL: str = "K2-Think"
 
+    # Adapted from AM-Thinking-v1: Advancing the Frontier of Reasoning at 32B Scale (Yunjie Ji et al.) https://arxiv.org/pdf/2505.08311
     SOLVER_PROMPT: str = "You are K2-Think, a helpful assistant trained by MBZUAI. To answer the user's question, you first think about the reasoning process and then provide the user with the answer. The reasoning process and answer are enclosed within <think> </think> and <answer> </answer> tags, respectively, i.e., <think> reasoning process here </think> <answer> answer here </answer>."
     SOLVER_TEMPERATURE: float = 1.0
 
@@ -35,10 +36,6 @@ env = Env()
 class BoNIndex(BaseModel):
     index: int  # must be 0 or 1
     explanation: str
-
-
-class QuestionList(BaseModel):
-    questions: list[str]
 
 
 class SearchList(BaseModel):
@@ -125,6 +122,7 @@ class K2ThinkPipeline:
         raise asyncio.TimeoutError(f"No task succeeded within hard timeout of {hard_timeout} seconds")
 
     async def select_best(self, question, completions):
+        # We use a linear scan here for simplicity, but a tree-based tournament would be more performant.
         answers = []
         for completion in completions:
             if completion is None:

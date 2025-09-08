@@ -69,7 +69,7 @@ class K2ThinkPipeline:
         fn: Callable[[], Awaitable[Any]],
         args_list: List[Any] = [],
         soft_timeout: float = 9*60,
-        hard_timeout: float = 720*60,
+        hard_timeout: float = 120*60,
         poll_interval: float = 10
     ) -> List[Any]:
         start_time = time.monotonic()
